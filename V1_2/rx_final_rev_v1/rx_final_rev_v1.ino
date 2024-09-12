@@ -15,6 +15,8 @@ int frontLight = A2;
 int backLight = A3;
 int lastSwitch_1 = 0;
 int lastSwitch_2 = 0;
+bool frontLightState = false;
+bool backLightState = false;
 
 void setup() {
   Serial.begin(9600);
@@ -55,33 +57,27 @@ void loop() {
   }
 }
 
-void lightControl (int switch_1, int switch_2) {
+void lightControl(int switch_1, int switch_2) {
   if (switch_1 != lastSwitch_1) {
-    if (switch_1 == 1) {
-      digitalWrite(frontLight, LOW);
-    } else {
-      digitalWrite(frontLight, HIGH);
-    }
+    frontLightState = !frontLightState;
+    digitalWrite(frontLight, frontLightState ? LOW : HIGH);
     lastSwitch_1 = switch_1;
   }
 
   if (switch_2 != lastSwitch_2) {
-    if (switch_2 == 1) {
-      digitalWrite(backLight, LOW);
-    } else {
-      digitalWrite(backLight, HIGH);
-    }
+    backLightState = !backLightState;
+    digitalWrite(backLight, backLightState ? LOW : HIGH);
     lastSwitch_2 = switch_2;
   }
 }
 
 void controlMovement(int xValue_1, int yValue_1) {
-  int motorSpeed = map(xValue_1, 0, 1023, -200, 200); //valor entre 0 y 255
+  int motorSpeed = map(xValue_1, 0, 1023, -250, 250); //valor entre 0 y 255
 
   if (yValue_1 < 341) { // Rango de 0 a 340: girar en el lugar hacia la izquierda
-    turnLeftInPlace(200); //valor entre 0 y 255
+    turnLeftInPlace(220); //valor entre 0 y 255
   } else if (yValue_1 > 682) { // Rango de 682 a 1023: girar en el lugar hacia la derecha
-    turnRightInPlace(200); //valor entre 0 y 255
+    turnRightInPlace(220); //valor entre 0 y 255
   } else {
     if (motorSpeed > 0) {
       moveForward(motorSpeed);
