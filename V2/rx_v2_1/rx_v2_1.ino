@@ -9,16 +9,16 @@
 RF24 radio(4, 5); // CE, CSN
 const byte address[6] = "00069";
 const int pwmPin_1 = 25;
-const int pwmPin_2 = 26;
+const int pwmPin_2 = 33;
 
 TinyGPSPlus gps;
-double latitude, longitude, spd_kmph = 0.0;
+double latitude, longitude, spd_kmph;
 #ifdef ESP32
 HardwareSerial SerialGPS(2);
 #endif
 
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
-float sht31_temp, sht31_hum = 0.0;
+float sht31_temp, sht31_hum;
 
 struct DataReception {
   int16_t xValue_1;
@@ -37,8 +37,8 @@ DataReception dataReception;
 unsigned long lastSensorRead = 0;
 unsigned long sensorReadInterval = 1000;
 
-const char* ssid = "your_ssid";
-const char* password = "your_password";
+const char* ssid = "Familia Hogar";
+const char* password = "famapa_men2024##";
 AsyncWebServer server(80);
 
 void setup() {
@@ -52,9 +52,11 @@ void setup() {
 
   ledcSetup(0, 5000, 8);
   ledcAttachPin(pwmPin_1, 0);
+//  ledcWrite(0, 0);
 
   ledcSetup(1, 5000, 8);
   ledcAttachPin(pwmPin_2, 1);
+//  ledcWrite(1, 0);
 
   if (!sht31.begin(0x44)) {
     Serial.println("ERROR SHT31");
@@ -77,8 +79,8 @@ void setup() {
     String response = "{";
     response += "\"temperatura\": " + String(sht31_temp) + ",";
     response += "\"humedad\": " + String(sht31_hum) + ",";
-    response += "\"latitud\": " + String(latitude, 6) + ",";
-    response += "\"longitud\": " + String(longitude, 6) + ",";
+    response += "\"latitud\": " + String(latitude, 7) + ",";
+    response += "\"longitud\": " + String(longitude, 7) + ",";
     response += "\"velocidad\": " + String(spd_kmph) + "}";
 
     request->send(200, "application/json", response);
@@ -104,17 +106,16 @@ void controlMovement(int16_t xValue_1, int16_t yValue_1) {
 
   if (xValue_1 > 525) {
     motorSpeed = map(xValue_1, 526, 1023, 0, 255);
-    ledcWrite(0, motorSpeed);
-    ledcWrite(1, motorSpeed);
   } else if (xValue_1 < 505) {
     motorSpeed = map(xValue_1, 504, 0, 0, 255);
-    ledcWrite(0, -motorSpeed);
-    ledcWrite(1, -motorSpeed);
   } else {
     motorSpeed = 0;
-    ledcWrite(0, motorSpeed);
-    ledcWrite(1, motorSpeed);
   }
+
+  motorSpeed = constrain(motorSpeed, 0, 255);
+
+  ledcWrite(0, motorSpeed);
+  ledcWrite(1, motorSpeed);
 
   Serial.print("motorSpeed: ");
   Serial.println(motorSpeed);
