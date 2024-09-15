@@ -4,6 +4,7 @@
 #include <TinyGPS++.h>
 #include <Wire.h>
 #include <Adafruit_SHT31.h>
+#include <ESPAsyncWebServer.h>
 
 RF24 radio(4, 5); // CE, CSN
 const byte address[6] = "00069";
@@ -11,14 +12,13 @@ const int pwmPin_1 = 25;
 const int pwmPin_2 = 26;
 
 TinyGPSPlus gps;
-float latitude, longitude, spd_kmph;
-String lat_str, lon_str;
+double latitude, longitude, spd_kmph = 0.0;
 #ifdef ESP32
 HardwareSerial SerialGPS(2);
 #endif
 
 Adafruit_SHT31 sht31 = Adafruit_SHT31();
-float sht31_temp, sht31_hum;
+float sht31_temp, sht31_hum = 0.0;
 
 struct DataReception {
   int16_t xValue_1;
@@ -34,17 +34,12 @@ struct DataReception {
 };
 DataReception dataReception;
 
-struct DataSend {
-  float latitude;
-  float longitude;
-  float speed_kmph;
-  float temperature;
-  float humidity;
-};
-DataSend dataSend;
-
 unsigned long lastSensorRead = 0;
 unsigned long sensorReadInterval = 1000;
+
+const char* ssid = "your_ssid";
+const char* password = "your_password";
+AsyncWebServer server(80);
 
 void setup() {
   Serial.begin(115200);
@@ -65,20 +60,43 @@ void setup() {
     Serial.println("ERROR SHT31");
     while (1);
   }
+
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Conectando a WiFi...");
+  }
+  Serial.println("Conectado a la red WiFi");
+  Serial.print("Accede a la API en: http://");
+  Serial.print(WiFi.localIP());
+  Serial.println("/datosRC");
+
+  server.on("/datosRC", HTTP_GET, [](AsyncWebServerRequest * request) {
+    readDataGPS_SHT31();
+
+    String response = "{";
+    response += "\"temperatura\": " + String(sht31_temp) + ",";
+    response += "\"humedad\": " + String(sht31_hum) + ",";
+    response += "\"latitud\": " + String(latitude, 6) + ",";
+    response += "\"longitud\": " + String(longitude, 6) + ",";
+    response += "\"velocidad\": " + String(spd_kmph) + "}";
+
+    request->send(200, "application/json", response);
+  });
+  server.begin();
 }
 
 void loop() {
   if (radio.available()) {
     radio.read(&dataReception, sizeof(dataReception));
     controlMovement(dataReception.xValue_1, dataReception.yValue_1);
-    delay(20);
   }
 
   if (millis() - lastSensorRead >= sensorReadInterval) {
     lastSensorRead = millis();
-    readAndSendData();
+    readDataGPS_SHT31();
   }
-  //    delay(20);
+  delay(20);
 }
 
 void controlMovement(int16_t xValue_1, int16_t yValue_1) {
@@ -102,56 +120,17 @@ void controlMovement(int16_t xValue_1, int16_t yValue_1) {
   Serial.println(motorSpeed);
 }
 
-void printDataSend() {
-  Serial.print("Latitud: ");
-  Serial.println(dataSend.latitude, 7); // 7 decimales para más precisión
-
-  Serial.print("Longitud: ");
-  Serial.println(dataSend.longitude, 7);
-
-  Serial.print("Velocidad (km/h): ");
-  Serial.println(dataSend.speed_kmph);
-
-  Serial.print("Temperatura: ");
-  Serial.println(dataSend.temperature);
-
-  Serial.print("Humedad: ");
-  Serial.println(dataSend.humidity);
-}
-
-void readAndSendData() {
-  bool datos_impresos = false;
-
-  while (SerialGPS.available() > 0) {
+void readDataGPS_SHT31() {
+  while (SerialGPS.available()) {
     if (gps.encode(SerialGPS.read())) {
-      if (gps.location.isValid() && !datos_impresos) {
-        dataSend.latitude = gps.location.lat();
-        dataSend.longitude = gps.location.lng();
-        dataSend.speed_kmph = gps.speed.kmph();
-        datos_impresos = true;
-
-        //        Serial.println("Latitud: " + String(dataSend.latitude, 7));
-        //        Serial.println("Longitud: " + String(dataSend.longitude, 7));
-        //        Serial.print("Velocidad (km/h): ");
-        //        Serial.println(dataSend.speed_kmph);
+      if (gps.location.isValid()) {
+        latitude = gps.location.lat();
+        longitude = gps.location.lng();
+        spd_kmph = gps.speed.kmph();
       }
     }
   }
 
-  dataSend.temperature = sht31.readTemperature();
-  dataSend.humidity = sht31.readHumidity();
-
-  //  Serial.print("Temperatura: ");
-  //  Serial.println(dataSend.temperature);
-  //  Serial.print("Humedad: ");
-  //  Serial.println(dataSend.humidity);
-
-  printDataSend();
-
-  bool envioExitoso = radio.write(&dataSend, sizeof(dataSend));
-  if (envioExitoso) {
-    Serial.println("Datos enviados correctamente");
-  } else {
-    Serial.println("Error al enviar los datos");
-  }
+  sht31_temp = sht31.readTemperature();
+  sht31_hum = sht31.readHumidity();
 }
