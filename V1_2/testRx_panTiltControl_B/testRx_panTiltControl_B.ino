@@ -28,39 +28,39 @@ void loop() {
     int data[10];
     radio.read(&data, sizeof(data));
 
-    int xValue_1 = data[0];
-    int yValue_1 = data[1];
-    int buttonState_1 = data[2];
+    //    int xValue_1 = data[0];
+    //    int yValue_1 = data[1];
+    //    int buttonState_1 = data[2];
     int xValue_2 = data[3];
     int yValue_2 = data[4];
-    int buttonState_2 = data[5];
-    int valuePot_1 = data[6];
-    int valuePot_2 = data[7];
-    int switch_1 = data[8];
-    int switch_2 = data[9];
+    //    int buttonState_2 = data[5];
+    //    int valuePot_1 = data[6];
+    //    int valuePot_2 = data[7];
+    //    int switch_1 = data[8];
+    //    int switch_2 = data[9];
 
     // Zona muerta para mejorar precisión
-    if (abs(xValue_1 - 512) > deadZone) {
+    if (abs(xValue_2 - 512) > deadZone) {
       // Solo mover el servo Pan si el eje X está fuera de la zona muerta
-      controlPanServo(xValue_1);
-    } else if (abs(yValue_1 - 512) > deadZone) {
+      controlPanServo(xValue_2);
+    } else if (abs(yValue_2 - 512) > deadZone) {
       // Solo mover el servo Tilt si el eje Y está fuera de la zona muerta
-      controlTiltServo(yValue_1);
+      controlTiltServo(yValue_2);
     } else {
       stopServos();
     }
-    
+
     delay(20); // Ajustar según sea necesario
   }
 }
 
-void controlPanServo(int xValue_1) {
-  int panSpeed = map(xValue_1, 0, 1023, 0, 180); // Mover solo el servo Pan
+void controlPanServo(int xValue_2) {
+  int panSpeed = map(xValue_2, 0, 1023, 0, 180); // Mover solo el servo Pan
   servoPan.write(panSpeed);
 }
 
-void controlTiltServo(int yValue_1) {
-  int tiltSpeed = map(yValue_1, 0, 1023, 0, 180); // Mover solo el servo Tilt
+void controlTiltServo(int yValue_2) {
+  int tiltSpeed = map(yValue_2, 0, 1023, 0, 180); // Mover solo el servo Tilt
   servoTilt.write(tiltSpeed);
 }
 

@@ -39,8 +39,8 @@ void loop() {
 
     //    controlMovement(xValue_1, yValue_1);
     //    lightControl(switch_1, switch_2);
-    if (xValue_1 < 500 || xValue_1 > 523 || yValue_1 < 500 || yValue_1 > 523) {
-      controlServos(xValue_1, yValue_1);
+    if (xValue_2 < 490 || xValue_2 > 530 || yValue_2 < 490 || yValue_2 > 530) {
+      controlServos(xValue_2, yValue_2);
     } else {
       stopServos();
     }
@@ -48,9 +48,9 @@ void loop() {
   }
 }
 
-void controlServos(int xValue_1, int yValue_1) {
-  int panSpeed = map(xValue_1, 0, 1023, 0, 180); // 90 es stop
-  int tiltSpeed = map(yValue_1, 0, 1023, 0, 180); // 90 es stop
+void controlServos(int xValue_2, int yValue_2) {
+  int panSpeed = map(xValue_2, 0, 1023, 0, 180); // 90 es stop
+  int tiltSpeed = map(yValue_2, 0, 1023, 0, 180); // 90 es stop
 
   servoPan.write(panSpeed);
   servoTilt.write(tiltSpeed);
