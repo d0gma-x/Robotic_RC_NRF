@@ -4,10 +4,8 @@
 #include <SD.h>
 #include <FS.h>
 #define SD_CS 5
-#define OLED_SDA 21
-#define OLED_SCL 22
 
-TinyGPSPlus gps;
+tyTinyGPSPlus gps;
 float latitude, longitude, spd_kmph, course_degrees;
 String lat_str, lon_str;
 #ifdef ESP32
