@@ -4,12 +4,20 @@
 #include <SD.h>
 #include <FS.h>
 #include <ArduinoJson.h>
+#include <HardwareSerial.h>
+#include <PM3006S.h>
 #define SD_CS 5
+
+PM3006S cubic;
 
 TinyGPSPlus gps;
 float latitude, longitude, spd_kmph, course_degrees;
 String lat_str, lon_str;
+float pm1, pm2_5, pm10, tsp, pq0_3, pq0_5, pq1, pq2_5, pq5, pq10;
+int err_cubic;
+
 #ifdef ESP32
+HardwareSerial SerialPM3006S(0);
 HardwareSerial SerialGPS(2);
 #endif
 
@@ -17,39 +25,44 @@ Adafruit_SHT31 sht31 = Adafruit_SHT31();
 float sht31_temp, sht31_hum;
 
 void writeFile(fs::FS &fs, const char * path, const char * message) {
-  Serial.printf("Writing file: %s\n", path);
+  //  Serial.printf("Writing file: %s\n", path);
+  bool successWF = false;
 
   File file = fs.open(path, FILE_WRITE);
   if (!file) {
-    Serial.println("Failed to open file for writing");
+    //    Serial.println("Failed to open file for writing");
     return;
   }
-  if (file.print(message)) {
-    Serial.println("File written");
-  } else {
-    Serial.println("Write failed");
-  }
+  successWF = file.print(message);
+  //  if (file.print(message)) {
+  //    Serial.println("File written");
+  //  } else {
+  //    Serial.println("Write failed");
+  //  }
   file.close();
 }
 
 void appendFile(fs::FS &fs, const char * path, const char * message) {
-  Serial.printf("Appending to file: %s\n", path);
+  //    Serial.printf("Appending to file: %s\n", path);
+  bool successAF = false;
 
   File file = fs.open(path, FILE_APPEND);
   if (!file) {
-    Serial.println("Failed to open file for appending");
+    //    Serial.println("Failed to open file for appending");
     return;
   }
-  if (file.print(message)) {
-    Serial.println("Message appended");
-  } else {
-    Serial.println("Append failed");
-  }
+  successAF = file.print(message);
+  //  if (file.print(message)) {
+  //    //        Serial.println("Message appended");
+  //  } else {
+  //    //    Serial.println("Append failed");
+  //  }
   file.close();
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
+  cubic.begin(&SerialPM3006S);
   SerialGPS.begin(9600);
 
   if (!sht31.begin(0x44)) {
@@ -58,23 +71,23 @@ void setup() {
   }
 
   if (!SD.begin(SD_CS)) {
-    Serial.println("Card Mount Failed");
+    Serial.println("ERROR MODULO SD");
     return;
   }
 
   uint8_t cardType = SD.cardType();
   if (cardType == CARD_NONE) {
-    Serial.println("No SD card attached");
+    Serial.println("SD No Conectada o Dañada");
     return;
   }
-  Serial.println("SD card initialized");
+  Serial.println("SD Inicializadsa");
 
-  File file = SD.open("/datalog.txt");
+  File file = SD.open("/datalog.json");
   if (!file) {
-    Serial.println("File doesn't exist, creating file...");
-    writeFile(SD, "/datalog.txt", "");
+    Serial.println(".txt No Existe, creando .json...");
+    writeFile(SD, "/datalog.json", "");
   } else {
-    Serial.println("File already exists");
+    Serial.println(".json Existente");
   }
   file.close();
 }
@@ -124,9 +137,24 @@ void readDataGps() {
   }
 }
 
+void readDataPM3006S() {
+  String Data = "data";
+  cubic.set_read();
+  delay(1000);
+  err_cubic = cubic.read(&pm1, &pm2_5, &pm10, &tsp, &pq0_3, &pq0_5, &pq1, &pq2_5, &pq5, &pq10);
+
+  //  if (!err_cubic) {
+  //    Data += ";pm1:" + String(pm1) + ";pm2_5:" + String(pm2_5) + ";pm10:" + String(pm10) + ";tsp:" + String(tsp)
+  //            + ";pq0_3:" + String(pq0_3) + ";pq0_5:" + String(pq0_5)
+  //            + ";pq1:" + String(pq1) + ";pq2_5:" + String(pq2_5)
+  //            + ";pq5:" + String(pq5) + ";pq10:" + String(pq10);
+  //  }
+}
+
 void processDataRead() {
   readDataGps();
   readDataSht31();
+  readDataPM3006S();
   StaticJsonDocument<256> doc;
 
   if (gps.location.isValid()) {
@@ -147,6 +175,18 @@ void processDataRead() {
     doc["humidity"] = nullptr;
   }
 
+  if (!err_cubic) {
+    doc["pm1"] = pm1;
+    doc["pm2_5"] = pm2_5;
+    doc["pm10"] = pm10;
+    doc["tsp"] = tsp;
+  } else {
+    doc["pm1"] = nullptr;
+    doc["pm2_5"] = nullptr;
+    doc["pm10"] = nullptr;
+    doc["tsp"] = nullptr;
+  }
+
   String jsonString;
   serializeJson(doc, jsonString);
   Serial.println(jsonString);
@@ -155,5 +195,5 @@ void processDataRead() {
 
 void loop() {
   processDataRead();
-  delay(1000);
+  delaY(1000);
 }
