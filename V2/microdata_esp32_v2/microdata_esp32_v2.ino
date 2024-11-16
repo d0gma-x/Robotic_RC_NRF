@@ -3,9 +3,10 @@
 #include <Adafruit_SHT31.h>
 #include <SD.h>
 #include <FS.h>
+#include <ArduinoJson.h>
 #define SD_CS 5
 
-tyTinyGPSPlus gps;
+TinyGPSPlus gps;
 float latitude, longitude, spd_kmph, course_degrees;
 String lat_str, lon_str;
 #ifdef ESP32
@@ -50,7 +51,6 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 void setup() {
   Serial.begin(115200);
   SerialGPS.begin(9600);
-  Serial.println("Iniciando GPS...");
 
   if (!sht31.begin(0x44)) {
     Serial.println("ERROR SHT31");
@@ -79,68 +79,81 @@ void setup() {
   file.close();
 }
 
-void readDataGps() {
-  bool datos_impresos = false;
+//String obtenerDireccionCardinal(float grados) {
+//  if (grados >= 337.5 || grados < 22.5) return "Norte";
+//  if (grados >= 22.5 && grados < 67.5) return "Noreste";
+//  if (grados >= 67.5 && grados < 112.5) return "Este";
+//  if (grados >= 112.5 && grados < 157.5) return "Sureste";
+//  if (grados >= 157.5 && grados < 202.5) return "Sur";
+//  if (grados >= 202.5 && grados < 247.5) return "Suroeste";
+//  if (grados >= 247.5 && grados < 292.5) return "Oeste";
+//  if (grados >= 292.5 && grados < 337.5) return "Noroeste";
+//  return "Desconocido";
+//}
 
+//void obtenerRumbo() {
+//  if (gps.course.isValid()) {
+//    course_degrees = gps.course.deg(); // Obtener el rumbo en grados
+//    String direccion = obtenerDireccionCardinal(course_degrees);
+//
+//    Serial.print("Rumbo: ");
+//    Serial.print( course_degrees);
+//    Serial.print("*/ ");
+//    Serial.println(direccion);
+//  } else {
+//    Serial.println("Esperando datos de rumbo...");
+//  }
+//}
+
+void readDataSht31() {
+  sht31_temp = sht31.readTemperature();
+  sht31_hum = sht31.readHumidity();
+}
+
+void readDataGps() {
   while (SerialGPS.available() > 0) {
     if (gps.encode(SerialGPS.read())) {
-      if (gps.location.isValid() && !datos_impresos) {
+      if (gps.location.isValid()) {
         latitude = gps.location.lat();
         lat_str = String(latitude, 7);
         longitude = gps.location.lng();
         lon_str = String(longitude, 7);
         spd_kmph = gps.speed.kmph();
-        Serial.println("lat: " + lat_str);
-        Serial.println("lon: " + lon_str);
-        Serial.print("speed-kmph: ");
-        Serial.println(spd_kmph);
-
-        datos_impresos = true;
       }
     }
   }
 }
 
-String obtenerDireccionCardinal(float grados) {
-  if (grados >= 337.5 || grados < 22.5) return "Norte";
-  if (grados >= 22.5 && grados < 67.5) return "Noreste";
-  if (grados >= 67.5 && grados < 112.5) return "Este";
-  if (grados >= 112.5 && grados < 157.5) return "Sureste";
-  if (grados >= 157.5 && grados < 202.5) return "Sur";
-  if (grados >= 202.5 && grados < 247.5) return "Suroeste";
-  if (grados >= 247.5 && grados < 292.5) return "Oeste";
-  if (grados >= 292.5 && grados < 337.5) return "Noroeste";
-  return "Desconocido";
-}
+void processDataRead() {
+  readDataGps();
+  readDataSht31();
+  StaticJsonDocument<256> doc;
 
-void obtenerRumbo() {
-  if (gps.course.isValid()) {
-    course_degrees = gps.course.deg(); // Obtener el rumbo en grados
-    String direccion = obtenerDireccionCardinal(course_degrees);
-
-    Serial.print("Rumbo: ");
-    Serial.print( course_degrees);
-    Serial.print("*/ ");
-    Serial.println(direccion);
+  if (gps.location.isValid()) {
+    doc["latitude"] = latitude;
+    doc["longitude"] = longitude;
+    doc["speed_kmph"] = spd_kmph;
   } else {
-    Serial.println("Esperando datos de rumbo...");
+    doc["latitude"] = nullptr;
+    doc["longitude"] = nullptr;
+    doc["speed_kmph"] = nullptr;
   }
+
+  if (!isnan(sht31_temp) && !isnan(sht31_hum)) {
+    doc["temperature"] = String(sht31_temp, 2);
+    doc["humidity"] = String(sht31_hum, 2);
+  } else {
+    doc["temperature"] = nullptr;
+    doc["humidity"] = nullptr;
+  }
+
+  String jsonString;
+  serializeJson(doc, jsonString);
+  Serial.println(jsonString);
+  appendFile(SD, "/datalog.txt", (jsonString + "\n").c_str());
 }
 
 void loop() {
-  sht31_temp = sht31.readTemperature();
-  sht31_hum = sht31.readHumidity();
-
-  Serial.print("Temp: ");
-  Serial.print(sht31_temp);
-  Serial.print(" /Hum: ");
-  Serial.println(sht31_hum);
-
-  //  String data = "Temperature: " + String(sht31_temp) + " *C, Humidity: " + String(sht31_hum) + " %\n";
-  //  appendFile(SD, "/datalog.txt", data.c_str());
-
-  readDataGps();
-  obtenerRumbo();
-  Serial.println("__________________________");
+  processDataRead();
   delay(1000);
 }
