@@ -21,6 +21,13 @@ struct DataReception {
   int16_t xValue_1;
   int16_t yValue_1;
   int16_t buttonState_1;
+  int16_t xValue_2;
+  int16_t yValue_2;
+  int16_t buttonState_2;
+  int16_t value_pot_1;
+  int16_t value_pot_2;
+  int16_t switchPinState_1;
+  int16_t switchPinState_2;
 };
 DataReception data;
 
@@ -41,7 +48,6 @@ void setup() {
 
   ledcSetup(pwmChannelA, pwmFrequency, pwmResolution);
   ledcSetup(pwmChannelB, pwmFrequency, pwmResolution);
-
   ledcAttachPin(ENA, pwmChannelA);
   ledcAttachPin(ENB, pwmChannelB);
 }
@@ -51,21 +57,25 @@ void loop() {
     radio.read(&data, sizeof(data));
 
     controlMovement(data.xValue_1, data.yValue_1);
-    //    Serial.print("xValue: ");
-    //    Serial.print(data.xValue_1);
-    //    Serial.print(" /yValue: ");
-    //    Serial.println(data.yValue_1);
+//        Serial.print("xValue: ");
+//        Serial.print(data.xValue_1);
+//        Serial.print(" /yValue: ");
+//        Serial.println(data.yValue_1);
+//        Serial.print("pot1: ");
+//        Serial.print(data.value_pot_1);
+//        Serial.print(" /pot2: ");
+//        Serial.println(data.value_pot_2);
   }
   delay(20);
 }
 
 void controlMovement(int16_t xValue_1, int16_t yValue_1) {
-  int16_t motorSpeed = map(xValue_1, 0, 1023, -250, 250);
+  int16_t motorSpeed = map(xValue_1, 0, 1023, -255, 255);
 
   if (yValue_1 < 341) { // Girar a la izquierda en el lugar
-    turnLeftInPlace(220);
+    turnLeftInPlace(200);
   } else if (yValue_1 > 682) { // Girar a la derecha en el lugar
-    turnRightInPlace(220);
+    turnRightInPlace(200);
   } else {
     if (motorSpeed > 0) {
       moveForward(motorSpeed);
