@@ -26,10 +26,10 @@ struct SwitchPins {
 
 // Definimos los pares de pines para cada switch
 SwitchPins switchPairs[] = {
-  {32, 33},  // Switch 1
-  {25, 26},  // Switch 2
-  {13, 12},  // Switch 3
-  {14, 27}   // Switch 4
+  {32, 33},
+  {25, 26},
+  {13, 12},
+  {14, 27}
 };
 
 Adafruit_SH1106 display(OLED_SDA, OLED_SCL);

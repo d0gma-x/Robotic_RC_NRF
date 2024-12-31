@@ -13,6 +13,7 @@ const int pot_1 = A4;
 const int pot_2 = A5;
 const int switchPin_1 = 2;
 const int switchPin_2 = 3;
+const int switchPin_3 = 7;
 const int joy_1_button = 4;
 const int joy_2_button = 5;
 
@@ -26,6 +27,7 @@ void setup() {
 
   pinMode(switchPin_1, INPUT_PULLUP);
   pinMode(switchPin_2, INPUT_PULLUP);
+  pinMode(switchPin_3, INPUT_PULLUP);
   pinMode(joy_1_button, INPUT_PULLUP);
   pinMode(joy_2_button, INPUT_PULLUP);
 }
@@ -44,8 +46,9 @@ void loop() {
 
   int switchPinState_1 = digitalRead(switchPin_1);
   int switchPinState_2 = digitalRead(switchPin_2);
+  int switchPinState_3 = digitalRead(switchPin_3);
 
-  int data[10];
+  int data[11];
   data[0] = xValue_1;
   data[1] = yValue_1;
   data[2] = buttonState_1;
@@ -56,6 +59,7 @@ void loop() {
   data[7] = value_pot_2;
   data[8] = switchPinState_1;
   data[9] = switchPinState_2;
+  data[10] = switchPinState_3;
 
   //  Serial.print("Enviando - JoyX_1: ");
   //  Serial.print(xValue_1);
@@ -79,5 +83,5 @@ void loop() {
   //  Serial.println(switchPinState_2);
 
   radio.write(&data, sizeof(data));
-  delay(50);
+  delay(40);
 }

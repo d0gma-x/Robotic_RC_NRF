@@ -116,9 +116,9 @@ void controlMovement(int16_t xValue_1, int16_t yValue_1) {
   int16_t motorSpeed = map(xValue_1, 0, 4095, -255, 255);
 
   if (yValue_1 < 1365) {
-    turnLeftInPlace(210);
+    turnLeftInPlace(190);
   } else if (yValue_1 > 2730) { // Ajustado para ADC de ESP32 (4095*2/3)
-    turnRightInPlace(210);
+    turnRightInPlace(190);
   } else {
     if (motorSpeed > 0) {
       moveForward(motorSpeed);
