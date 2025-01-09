@@ -66,10 +66,8 @@ void setup() {
 }
 
 void loop() {
-  //  Serial.println(F("Esperando datos... VOID LOOP"));
   if (radio.available()) {
     radio.read(&data, sizeof(DataPacket));
-    //    Serial.println(F("Esperando datos... RADIO"));
 
     // Debug print
     Serial.println("\n--- Datos Recibidos ---");
