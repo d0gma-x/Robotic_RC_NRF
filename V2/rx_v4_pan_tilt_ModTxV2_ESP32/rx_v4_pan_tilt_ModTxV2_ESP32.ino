@@ -17,6 +17,8 @@ int pwmChannelA = 0;
 int pwmChannelB = 1;
 int pwmFrequency = 5000;
 int pwmResolution = 8;
+int lastSwitchState = 0;
+int panTiltEnable = 0;
 
 struct DataPacket {
   int16_t xValue_1;
@@ -29,20 +31,6 @@ struct DataPacket {
   int16_t encoderPos;
 };
 DataPacket data;
-
-// Antigua estructura (comentada para referencia)
-/*struct DataReception {
-  int16_t xValue_1;
-  int16_t yValue_1;
-  int16_t buttonState_1;
-  int16_t xValue_2;
-  int16_t yValue_2;
-  int16_t buttonState_2;
-  int16_t value_pot_1;
-  int16_t value_pot_2;
-  int16_t switchPinState_1;
-  int16_t switchPinState_2;
-  };*/
 
 const int SERVO_PAN_PIN = 12;
 const int SERVO_TILT_PIN = 13;
@@ -93,21 +81,24 @@ void loop() {
     controlMovement(data.xValue_1, data.yValue_1);
 
     // Control de pan/tilt
-    bool switchEnabled = (data.switchStates[0] == 1);
-    handlePanTilt(switchEnabled, data.xValue_2, data.yValue_2);
+//    if (data.switchStates[1] == 1 && lastSwitchState == 0) {
+//      panTiltEnable = !panTiltEnable;
+//    }
+//    lastSwitchState = data.switchStates[1];
+    handlePanTilt(data.switchStates[0], data.xValue_2, data.yValue_2);
 
     //    Serial.print("Joy1 X/Y: "); Serial.print(data.xValue_1); Serial.print("/"); Serial.println(data.yValue_1);
     //    Serial.print("Joy2 X/Y: "); Serial.print(data.xValue_2); Serial.print("/"); Serial.println(data.yValue_2);
     //    Serial.print("Pot1/2: "); Serial.print(data.pot_1); Serial.print("/"); Serial.println(data.pot_2);
     //    Serial.print("Encoder: "); Serial.println(data.encoderPos);
-    for (int i = 0; i < 4; i++) {
-      Serial.print("Switch ");
-      Serial.print(i + 1);
-      Serial.print(": State1=");
-      Serial.print(data.switchStates[i * 2]);
-      Serial.print(", State2=");
-      Serial.println(data.switchStates[i * 2 + 1]);
-    }
+    //    for (int i = 0; i < 4; i++) {
+    //      Serial.print("Switch ");
+    //      Serial.print(i + 1);
+    //      Serial.print(": State1=");
+    //      Serial.print(data.switchStates[i * 2]);
+    //      Serial.print(", State2=");
+    //      Serial.println(data.switchStates[i * 2 + 1]);
+    //    }
   }
   delay(20);
 }
@@ -130,8 +121,8 @@ void controlMovement(int16_t xValue_1, int16_t yValue_1) {
   }
 }
 
-void handlePanTilt(bool enabled, uint16_t xValue_2, uint16_t yValue_2) {
-  if (!enabled) {
+void handlePanTilt(int switchStates0, uint16_t xValue_2, uint16_t yValue_2) {
+  if (switchStates0 == 1) {
     int panIncrement = map(yValue_2, 0, 4095, -2, 2) * -1;
     int tiltIncrement = map(xValue_2, 0, 4095, -2, 2) * -1;
 
