@@ -38,6 +38,7 @@ Servo servoPan;
 Servo servoTilt;
 int panPosition = 90;
 int tiltPosition = 90;
+const int pinLight = 15;
 
 void setup() {
   Serial.begin(115200);
@@ -53,6 +54,8 @@ void setup() {
   pinMode(IN2, OUTPUT);
   pinMode(IN3, OUTPUT);
   pinMode(IN4, OUTPUT);
+  pinMode(pinLight, OUTPUT);
+  digitalWrite(pinLight, LOW);
 
   ledcSetup(pwmChannelA, pwmFrequency, pwmResolution);
   ledcSetup(pwmChannelB, pwmFrequency, pwmResolution);
@@ -81,11 +84,9 @@ void loop() {
     controlMovement(data.xValue_1, data.yValue_1);
 
     // Control de pan/tilt
-//    if (data.switchStates[1] == 1 && lastSwitchState == 0) {
-//      panTiltEnable = !panTiltEnable;
-//    }
-//    lastSwitchState = data.switchStates[1];
     handlePanTilt(data.switchStates[0], data.xValue_2, data.yValue_2);
+
+    handleLightControl(data.switchStates[2]);
 
     //    Serial.print("Joy1 X/Y: "); Serial.print(data.xValue_1); Serial.print("/"); Serial.println(data.yValue_1);
     //    Serial.print("Joy2 X/Y: "); Serial.print(data.xValue_2); Serial.print("/"); Serial.println(data.yValue_2);
@@ -137,6 +138,14 @@ void handlePanTilt(int switchStates0, uint16_t xValue_2, uint16_t yValue_2) {
       tiltPosition = constrain(tiltPosition, 0, 179);
       servoTilt.write(tiltPosition);
     }
+  }
+}
+
+void handleLightControl(int switchStates2){
+  if (switchStates2 == 1){
+    digitalWrite(pinLight, HIGH);
+  }else{
+    digitalWrite(pinLight, LOW);
   }
 }
 
