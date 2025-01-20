@@ -1,3 +1,7 @@
+//Rx ESP32-NRF24L01 TANK BENDER-1 TESTING
+//Codigo funcional para ESP32 2.0.0
+//Versiones posteriores presentan problemas en Pan&Tilt
+
 #include <SPI.h>
 #include <nRF24L01.h>
 #include <RF24.h>
@@ -17,8 +21,6 @@ int pwmChannelA = 0;
 int pwmChannelB = 1;
 int pwmFrequency = 5000;
 int pwmResolution = 8;
-int lastSwitchState = 0;
-int panTiltEnable = 0;
 
 struct DataPacket {
   int16_t xValue_1;
@@ -141,10 +143,10 @@ void handlePanTilt(int switchStates0, uint16_t xValue_2, uint16_t yValue_2) {
   }
 }
 
-void handleLightControl(int switchStates2){
-  if (switchStates2 == 1){
+void handleLightControl(int switchStates2) {
+  if (switchStates2 == 1) {
     digitalWrite(pinLight, HIGH);
-  }else{
+  } else {
     digitalWrite(pinLight, LOW);
   }
 }
