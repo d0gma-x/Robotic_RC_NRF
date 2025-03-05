@@ -82,10 +82,8 @@ void loop() {
   if (radio.available()) {
     radio.read(&data, sizeof(DataPacket));
 
-    // Control de movimiento
     controlMovement(data.xValue_1, data.yValue_1);
 
-    // Control de pan/tilt
     handlePanTilt(data.switchStates[0], data.xValue_2, data.yValue_2);
 
     handleLightControl(data.switchStates[2]);
@@ -107,19 +105,37 @@ void loop() {
 }
 
 void controlMovement(int16_t xValue_1, int16_t yValue_1) {
-  int16_t motorSpeed = map(xValue_1, 0, 4095, -255, 255);
+  //  int16_t motorSpeed = map(xValue_1, 0, 4095, -255, 255);
+  //  Serial.print("speed: "); Serial.println(motorSpeed);
 
-  if (yValue_1 < 1365) {
-    turnLeftInPlace(190);
-  } else if (yValue_1 > 2730) { // Ajustado para ADC de ESP32 (4095*2/3)
-    turnRightInPlace(190);
+  const int16_t CENTER = 2048;
+  const int16_t DEADZONE = 320;
+  int16_t xOffset = xValue_1 - CENTER;
+  int16_t motorSpeed;
+
+  if (abs(xOffset) < DEADZONE) {
+    motorSpeed = 0;
   } else {
-    if (motorSpeed > 0) {
-      moveForward(motorSpeed);
-    } else if (motorSpeed < 0) {
-      moveBackward(-motorSpeed);
+    if (xOffset > 0) {
+      motorSpeed = map(xOffset - DEADZONE, 0, 2047 - DEADZONE, 0, 255);
     } else {
-      stopMotors();
+      motorSpeed = map(xOffset + DEADZONE, -2048 + DEADZONE, 0, -255, 0);
+    }
+    Serial.print("xOffset: "); Serial.println(xOffset);
+    Serial.print("speed: "); Serial.println(motorSpeed);
+
+    if (yValue_1 < 1365) {
+      turnLeftInPlace(190);
+    } else if (yValue_1 > 2730) { // Ajustado para ADC de ESP32 (4095*2/3)
+      turnRightInPlace(190);
+    } else {
+      if (motorSpeed > 0) {
+        moveForward(motorSpeed);
+      } else if (motorSpeed < 0) {
+        moveBackward(-motorSpeed);
+      } else {
+        stopMotors();
+      }
     }
   }
 }
